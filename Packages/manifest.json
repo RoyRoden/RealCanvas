@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.3dconnexion.3dxunity3d": "file:C:/Program Files/3Dconnexion/3DxWare/3DxUnity3D/src",
     "com.unity.ai.navigation": "1.1.1",
     "com.unity.collab-proxy": "1.17.6",
     "com.unity.feature.cinematic": "1.0.0",
