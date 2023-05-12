@@ -4,9 +4,19 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using System.IO;
 
+public static class ShaderProperties
+{
+    public const string VideoTexPropertyName = "_VideoTex";
+    public const string M0PropertyName = "_M0";
+    public const string M1PropertyName = "_M1";
+    public const string M2PropertyName = "_M2";
+}
+
 [ExecuteAlways]
 public class RealCanvas : MonoBehaviour
 {
+    #region Serialized Fields
+
     [SerializeField, Delayed]
     private string deviceName = "Select a Webcam Device";
     [SerializeField]
@@ -29,6 +39,8 @@ public class RealCanvas : MonoBehaviour
     [SerializeField, Range(0, 1)]
     private float areaFactor = 0.2f;
 
+    #endregion
+
     public List<Material> materials;
 
     private WebCamTexture webcamTexture;
@@ -42,6 +54,8 @@ public class RealCanvas : MonoBehaviour
 
     private float[] points;
 
+    #region Unity Methods
+
     void Start()
     {
         ResetTransform();
@@ -54,17 +68,24 @@ public class RealCanvas : MonoBehaviour
 
     private void Update()
     {
-        if (webcamTexture != null && webcamTexture.isPlaying)
+        if (webcamTexture != null)
         {
-            var rawFrame = webcamTexture.GetPixels32(webcamData);
-            if (enableCanvasRecognition)
+            if (webcamTexture.isPlaying)
             {
-                CanvasRecognition(ref rawFrame, webcamTexture.width, webcamTexture.height, blurKSize, threshValue, threshMax, epsilonFactor, areaFactor, (int)step, ref points);
+                var rawFrame = webcamTexture.GetPixels32(webcamData);
+                if (enableCanvasRecognition)
+                {
+                    CanvasRecognition(ref rawFrame, webcamTexture.width, webcamTexture.height, blurKSize, threshValue, threshMax, epsilonFactor, areaFactor, (int)step, ref points);
+                }
+                cameraTexture.SetPixels32(rawFrame);
+                cameraTexture.Apply();
             }
-            cameraTexture.SetPixels32(rawFrame);
-            cameraTexture.Apply();
         }
     }
+
+    #endregion
+
+    #region Public Methods
 
     public void ResetTransform()
     {
@@ -88,34 +109,21 @@ public class RealCanvas : MonoBehaviour
     // Set material properties
     public void SetMaterials()
     {
-        int materialsCount = 0;
-        for (int i = 0; i < materials.Count; i++)
+        OperateOnMaterials((material) =>
         {
-            if (materials[i] != null)
-            {
-                materials[i].SetTexture("_VideoTex", cameraTexture);
-                materialsCount++;
-            }
-        }
-        if (materialsCount == 0) {
-            throw new Exception("No materials assigned!");
-        } else 
-        { 
-            materialsCount = 0; 
-        }
+            material.SetTexture(ShaderProperties.VideoTexPropertyName, cameraTexture);
+        });
     }
 
+    // Set transformation matrix in the shader assigned to each material
     public void SetVectors (double[] M)
     {
-        for (int i = 0; i < materials.Count; i++)
+        OperateOnMaterials((material) =>
         {
-            if (materials[i] != null)
-            {
-                materials[i].SetVector("_M0", new Vector3((float)M[0], (float)M[1], (float)M[2]));
-                materials[i].SetVector("_M1", new Vector3((float)M[3], (float)M[4], (float)M[5]));
-                materials[i].SetVector("_M2", new Vector3((float)M[6], (float)M[7], 1f));
-            }
-        }
+            material.SetVector(ShaderProperties.M0PropertyName, new Vector3((float)M[0], (float)M[1], (float)M[2]));
+            material.SetVector(ShaderProperties.M1PropertyName, new Vector3((float)M[3], (float)M[4], (float)M[5]));
+            material.SetVector(ShaderProperties.M2PropertyName, new Vector3((float)M[6], (float)M[7], 1f));
+        });
     }
 
     public void StopCamera()
@@ -139,9 +147,20 @@ public class RealCanvas : MonoBehaviour
         // Initialise WebCamTexture
         webcamTexture = new WebCamTexture(deviceName, videoWidth, videoHeight, videoFPS);
         webcamTexture.Play();
+
+        // If cameraTexture already exists, destroy it first to free up memory
+        if (cameraTexture != null)
+        {
+            Destroy(cameraTexture);
+        }
+
         cameraTexture = new Texture2D(webcamTexture.width, webcamTexture.height);
-        // the below is done to avoid allocating new memory each frame
-        webcamData = new Color32[webcamTexture.width * webcamTexture.height];
+
+        // If webcamData array already exists and has the correct size, no need to reallocate
+        if (webcamData == null || webcamData.Length != webcamTexture.width * webcamTexture.height)
+        {
+            webcamData = new Color32[webcamTexture.width * webcamTexture.height];
+        }
 
         // Set material properties
         SetMaterials();
@@ -161,8 +180,14 @@ public class RealCanvas : MonoBehaviour
             now = now.Replace(" ", "");
 
             // Write the returned byte array to a file in the project folder
-            File.WriteAllBytes(Application.dataPath + "/RealCanvas/Screenshots/screenshot_" + now + ".png", bytes);
-            Debug.Log("Texture Saved!");
+            string filePath = Path.Combine(Application.dataPath, "RealCanvas/Screenshots", $"screenshot_{now}.png");
+
+            using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                fileStream.Write(bytes, 0, bytes.Length);
+            }
+
+            Debug.Log("Texture saved!");
         }
         else
         {
@@ -207,6 +232,28 @@ public class RealCanvas : MonoBehaviour
         Debug.Log("Warped Perspective!");
     }
 
+    #endregion
+
+    #region Private Methods
+
+    private void OperateOnMaterials(Action<Material> operation)
+    {
+        if (materials != null && materials.Count > 0)
+        {
+            for (int i = 0; i < materials.Count; i++)
+            {
+                if (materials[i] != null)
+                {
+                    operation(materials[i]);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("No materials assigned!");
+        }
+    }
+
     // Perspective Transform
     private double[] PerspectiveTransform(List<Vector2> src, List<Vector2> dst)
     {
@@ -236,7 +283,7 @@ public class RealCanvas : MonoBehaviour
     }
 
     // Gaussian Elimination
-    public double[] GaussianElimination(double[,] A, double[] B)
+    private double[] GaussianElimination(double[,] A, double[] B)
     {
         int N = B.Length;
 
@@ -294,7 +341,10 @@ public class RealCanvas : MonoBehaviour
         return X;
     }
 
-// Import C++ CanvasRecognition plugin
-[DllImport("CanvasRecognition")]
+    #endregion
+
+    #region Import C++ CanvasRecognition plugin
+    [DllImport("CanvasRecognition")]
     private static extern void CanvasRecognition(ref Color32[] raw, int width, int height, int blurKSize, int threshValue, int threshMax, double epsilonFactor, float areaFactor, int step, ref float[] pts);
+    #endregion
 }

@@ -758,9 +758,8 @@ GameObject:
   m_Component:
   - component: {fileID: 846394886}
   - component: {fileID: 846394887}
-  - component: {fileID: 846394888}
   m_Layer: 0
-  m_Name: LiveTexture
+  m_Name: RealCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -806,18 +805,6 @@ MonoBehaviour:
   materials:
   - {fileID: 2100000, guid: f759e93387b160046aee158b5df49728, type: 2}
   - {fileID: 2100000, guid: b6c1026b24995ab4a966fc7e5283536a, type: 2}
---- !u!114 &846394888
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 846394884}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13d0222328a9a3f46af86c9f5457bc87, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1290815318
 GameObject:
   m_ObjectHideFlags: 0
