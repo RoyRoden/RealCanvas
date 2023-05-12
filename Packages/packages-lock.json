@@ -1,11 +1,5 @@
 {
   "dependencies": {
-    "com.3dconnexion.3dxunity3d": {
-      "version": "file:C:/Program Files/3Dconnexion/3DxWare/3DxUnity3D/src",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {}
-    },
     "com.autodesk.fbx": {
       "version": "4.1.1",
       "depth": 2,

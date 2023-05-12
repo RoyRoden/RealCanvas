@@ -73,3 +73,6 @@ crashlytics-build.properties
 
 # Large DLLs
 /[Aa]ssets/[Rr]ealCanvas/[Pp]lugins/[Cc]anvasRecognition/*.dll
+
+# Third Party Packages
+//[Aa]ssets/[Ff]ullscreen/
