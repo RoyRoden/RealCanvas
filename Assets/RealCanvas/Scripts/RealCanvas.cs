@@ -1,350 +1,195 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine;
-using System.IO;
 
-public static class ShaderProperties
+namespace RealCanvas
 {
-    public const string VideoTexPropertyName = "_VideoTex";
-    public const string M0PropertyName = "_M0";
-    public const string M1PropertyName = "_M1";
-    public const string M2PropertyName = "_M2";
-}
-
-[ExecuteAlways]
-public class RealCanvas : MonoBehaviour
-{
-    #region Serialized Fields
-
-    [SerializeField, Delayed]
-    private string deviceName = "Select a Webcam Device";
-    [SerializeField]
-    private int videoWidth = 1280;
-    [SerializeField]
-    private int videoHeight = 720;
-    [SerializeField]
-    private int videoFPS = 30;
-    private enum steps { Gray, Blur, Threshold, Contour, Poly };
-    [SerializeField]
-    private steps step = steps.Poly;
-    [SerializeField, Range(1, 25)]
-    private int blurKSize = 4;
-    [SerializeField, Range(0, 255)]
-    private int threshValue = 127;
-    [SerializeField, Range(0, 255)]
-    private int threshMax = 255;
-    [SerializeField, Range(0, 1)]
-    private double epsilonFactor = 0.08;
-    [SerializeField, Range(0, 1)]
-    private float areaFactor = 0.2f;
-
-    #endregion
-
-    public List<Material> materials;
-
-    private WebCamTexture webcamTexture;
-    private Color32[] webcamData;
-    private Texture2D cameraTexture;
-
-    private bool enableCanvasRecognition = false;
-
-    private List<Vector2> srcPts = new List<Vector2>();
-    private List<Vector2> dstPts = new List<Vector2>();
-
-    private float[] points;
-
-    #region Unity Methods
-
-    void Start()
+    [ExecuteAlways]
+    public class RealCanvas : MonoBehaviour
     {
-        ResetTransform();
-        SetMaterials();
-    }
-    private void OnValidate()
-    {
-        SetMaterials();
-    }
 
-    private void Update()
-    {
-        if (webcamTexture != null)
+        #region Serialized Fields
+
+        [Tooltip("Name of the Webcam Device")]
+        [SerializeField, Delayed]
+        private string deviceName = "Select a Webcam Device";
+
+        [Tooltip("Width of the video")]
+        [SerializeField]
+        private int videoWidth = 1280;
+
+        [Tooltip("Height of the video")]
+        [SerializeField]
+        private int videoHeight = 720;
+
+        [Tooltip("Frames per second")]
+        [SerializeField]
+        private int videoFPS = 30;
+
+        private enum steps { Gray, Blur, Threshold, Contour, Poly };
+        [SerializeField]
+        private steps step = steps.Poly;
+
+        [Tooltip("Blur Kernel Size")]
+        [SerializeField, Range(1, 25)]
+        private int blurKSize = 4;
+
+        [Tooltip("Threshold Value")]
+        [SerializeField, Range(0, 255)]
+        private int threshValue = 127;
+
+        [Tooltip("Threshold Maximum")]
+        [SerializeField, Range(0, 255)]
+        private int threshMax = 255;
+
+        [Tooltip("Epsilon Factor for the contour approximation")]
+        [SerializeField, Range(0, 1)]
+        private double epsilonFactor = 0.08;
+
+        [Tooltip("Area Factor for the contour approximation")]
+        [SerializeField, Range(0, 1)]
+        private float areaFactor = 0.2f;
+
+        public List<Material> materials;
+
+        #endregion
+
+        #region Declare Classes
+
+        private CameraController cameraController;
+        private MaterialController materialController;
+        private PerspectiveProjection perspectiveProjection;
+        private CanvasRecognitionDLL canvasRecognitionDLL;
+
+        #endregion
+
+        #region Private Variables
+
+        private bool enableCanvasRecognition = false;
+
+        #endregion
+
+        #region Unity Methods
+
+        private void Awake()
         {
-            if (webcamTexture.isPlaying)
+            InitializeObjects();
+        }
+
+        private void InitializeObjects()
+        {
+            cameraController = GetComponent<CameraController>();
+            if (cameraController == null)
+                cameraController = gameObject.AddComponent<CameraController>();
+
+            materialController = GetComponent<MaterialController>();
+            if (materialController == null)
+                materialController = gameObject.AddComponent<MaterialController>();
+
+            perspectiveProjection = GetComponent<PerspectiveProjection>();
+            if (perspectiveProjection == null)
+                perspectiveProjection = gameObject.AddComponent<PerspectiveProjection>();
+
+            canvasRecognitionDLL = GetComponent<CanvasRecognitionDLL>();
+            if (canvasRecognitionDLL == null)
+                canvasRecognitionDLL = gameObject.AddComponent<CanvasRecognitionDLL>();
+
+            cameraController.cameraTexture = new Texture2D(videoWidth, videoHeight);
+            cameraController.webcamData = new Color32[videoWidth * videoHeight];
+            cameraController.webcamTexture = new WebCamTexture(videoWidth, videoHeight);
+        }
+
+        void Start()
+        {
+            InitializeObjects();
+
+            materialController.SetMaterials(materials, cameraController.cameraTexture);
+
+            ResetTransform();
+        }
+
+        private void Update()
+        {
+            if (cameraController != null)
             {
-                var rawFrame = webcamTexture.GetPixels32(webcamData);
-                if (enableCanvasRecognition)
+                if (cameraController.webcamTexture != null && cameraController.webcamTexture.isPlaying)
                 {
-                    CanvasRecognition(ref rawFrame, webcamTexture.width, webcamTexture.height, blurKSize, threshValue, threshMax, epsilonFactor, areaFactor, (int)step, ref points);
-                }
-                cameraTexture.SetPixels32(rawFrame);
-                cameraTexture.Apply();
-            }
-        }
-    }
-
-    #endregion
-
-    #region Public Methods
-
-    public void ResetTransform()
-    {
-        // Set points to video frame width and height.
-        // This array holds the values that will be overridden by the OpenCV plugin
-        // with points defining the corners of the recognized canvas.
-        points = new float[] { 0f, 0f, videoWidth, 0f, 0f, videoHeight, videoWidth, videoHeight };
-
-        // Reset the transformation matrix in the RealCanvas shader
-        SetVectors(new double[] { 1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f });
-
-        // Create a list of 4 vectors to hold the normalized coordinates of the screen's corners
-        srcPts.Add(new Vector2(0f, 0f));
-        srcPts.Add(new Vector2(1f, 0f));
-        srcPts.Add(new Vector2(0f, 1f));
-        srcPts.Add(new Vector2(1f, 1f));
-
-        Debug.Log("Transformation Matrix has been reset!");
-    }
-
-    // Set material properties
-    public void SetMaterials()
-    {
-        OperateOnMaterials((material) =>
-        {
-            material.SetTexture(ShaderProperties.VideoTexPropertyName, cameraTexture);
-        });
-    }
-
-    // Set transformation matrix in the shader assigned to each material
-    public void SetVectors (double[] M)
-    {
-        OperateOnMaterials((material) =>
-        {
-            material.SetVector(ShaderProperties.M0PropertyName, new Vector3((float)M[0], (float)M[1], (float)M[2]));
-            material.SetVector(ShaderProperties.M1PropertyName, new Vector3((float)M[3], (float)M[4], (float)M[5]));
-            material.SetVector(ShaderProperties.M2PropertyName, new Vector3((float)M[6], (float)M[7], 1f));
-        });
-    }
-
-    public void StopCamera()
-    {
-        StopCanvasRecognition();
-
-        if (webcamTexture != null)
-        {
-            webcamTexture.Stop();
-            webcamTexture = null;
-        }
-
-        Debug.Log("Camera stopped playing!");
-    }
-
-    public void StartCamera()
-    {
-        //Stop Camera
-        StopCamera();
-
-        // Initialise WebCamTexture
-        webcamTexture = new WebCamTexture(deviceName, videoWidth, videoHeight, videoFPS);
-        webcamTexture.Play();
-
-        // If cameraTexture already exists, destroy it first to free up memory
-        if (cameraTexture != null)
-        {
-            Destroy(cameraTexture);
-        }
-
-        cameraTexture = new Texture2D(webcamTexture.width, webcamTexture.height);
-
-        // If webcamData array already exists and has the correct size, no need to reallocate
-        if (webcamData == null || webcamData.Length != webcamTexture.width * webcamTexture.height)
-        {
-            webcamData = new Color32[webcamTexture.width * webcamTexture.height];
-        }
-
-        // Set material properties
-        SetMaterials();
-
-        Debug.Log("Start Playing!");
-    }
-
-    public void SaveTexture()
-    {
-        if (webcamTexture != null)
-        {
-            byte[] bytes = ImageConversion.EncodeArrayToPNG(cameraTexture.GetRawTextureData(), cameraTexture.graphicsFormat, (uint)webcamTexture.width, (uint)webcamTexture.height);
-
-            String now = System.DateTime.Now.ToString();
-            now = now.Replace("/", "");
-            now = now.Replace(":", "");
-            now = now.Replace(" ", "");
-
-            // Write the returned byte array to a file in the project folder
-            string filePath = Path.Combine(Application.dataPath, "RealCanvas/Screenshots", $"screenshot_{now}.png");
-
-            using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                fileStream.Write(bytes, 0, bytes.Length);
-            }
-
-            Debug.Log("Texture saved!");
-        }
-        else
-        {
-            throw new Exception("Camera is not playing!");
-        }
-    }
-
-    public void StartCanvasRecognition()
-    {
-        ResetTransform();
-
-        enableCanvasRecognition = true;
-
-        Debug.Log("Canvas Recognition Active!");
-    }
-
-    public void StopCanvasRecognition()
-    {
-        enableCanvasRecognition = false;
-
-        Debug.Log("Canvas Recognition stopped!");
-    }
-
-    public void WarpPerspective()
-    {
-        // Stop Canvas Recognition
-        StopCanvasRecognition();
-
-        // Clear the list to only hold current values
-        dstPts.Clear();
-
-        // Create a list of destination points
-        dstPts.Add(new Vector2(points[0] / videoWidth, points[1] / videoHeight));
-        dstPts.Add(new Vector2(points[2] / videoWidth, points[3] / videoHeight));
-        dstPts.Add(new Vector2(points[4] / videoWidth, points[5] / videoHeight));
-        dstPts.Add(new Vector2(points[6] / videoWidth, points[7] / videoHeight));
-
-        // Run perspective transform passing source and destination points
-        // and set the transformation matrix in the shader
-        SetVectors(PerspectiveTransform(srcPts, dstPts));
-
-        Debug.Log("Warped Perspective!");
-    }
-
-    #endregion
-
-    #region Private Methods
-
-    private void OperateOnMaterials(Action<Material> operation)
-    {
-        if (materials != null && materials.Count > 0)
-        {
-            for (int i = 0; i < materials.Count; i++)
-            {
-                if (materials[i] != null)
-                {
-                    operation(materials[i]);
-                }
-            }
-        }
-        else
-        {
-            Debug.LogError("No materials assigned!");
-        }
-    }
-
-    // Perspective Transform
-    private double[] PerspectiveTransform(List<Vector2> src, List<Vector2> dst)
-    {
-        double[,] A = new double[8, 8];
-        double[] B = new double[8];
-        double[] X;
-
-        // Algorithm to populate the A and B arrays is based on the OpenCV library getPerspectiveTransform code from (https://github.com/opencv/opencv/blob/4.x/modules/imgproc/src/imgwarp.cpp)
-        for (int i = 0; i < 4; i++)
-        {
-            A[i, 0] = A[i + 4, 3] = src[i].x;
-            A[i, 1] = A[i + 4, 4] = src[i].y;
-            A[i, 2] = A[i + 4, 5] = 1;
-            A[i, 3] = A[i, 4] = A[i, 5] = A[i + 4, 0] = A[i + 4, 1] = A[i + 4, 2] = 0;
-            A[i, 6] = -src[i].x * dst[i].x;
-            A[i, 7] = -src[i].y * dst[i].x;
-            A[i + 4, 6] = -src[i].x * dst[i].y;
-            A[i + 4, 7] = -src[i].y * dst[i].y;
-            B[i] = dst[i].x;
-            B[i + 4] = dst[i].y;
-        }
-
-        // Perform Gaussian Elimination
-        X = GaussianElimination(A, B);
-
-        return X;
-    }
-
-    // Gaussian Elimination
-    private double[] GaussianElimination(double[,] A, double[] B)
-    {
-        int N = B.Length;
-
-        for (int p = 0; p < N; p++)
-        {
-            // find pivot row and swap
-            int max = p;
-            for (int i = p + 1; i < N; i++)
-            {
-                if (Math.Abs(A[i, p]) > Math.Abs(A[max, p]))
-                {
-                    max = i;
-                }
-            }
-            double[] temp = new double[N];
-            for (int i = 0; i < N; i++)
-            {
-                temp[i] = A[p, i];
-                A[p, i] = A[max, i];
-                A[max, i] = temp[i];
-            }
-            double t = B[p];
-            B[p] = B[max];
-            B[max] = t;
-
-            // singular or nearly singular
-            if (Math.Abs(A[p, p]) <= double.Epsilon)
-            {
-                throw new Exception("Matrix is singular or nearly singular");
-            }
-
-            // pivot within A and B
-            for (int i = p + 1; i < N; i++)
-            {
-                double alpha = A[i, p] / A[p, p];
-                B[i] -= alpha * B[p];
-                for (int j = p; j < N; j++)
-                {
-                    A[i, j] -= alpha * A[p, j];
+                    var rawFrame = cameraController.webcamTexture.GetPixels32(cameraController.webcamData);
+                    if (enableCanvasRecognition)
+                    {
+                        canvasRecognitionDLL.PerformRecognition(ref rawFrame, videoWidth, videoHeight, blurKSize, threshValue, threshMax, epsilonFactor, areaFactor, (int)step, ref canvasRecognitionDLL.points);
+                    }
+                    cameraController.cameraTexture.SetPixels32(rawFrame);
+                    cameraController.cameraTexture.Apply();
                 }
             }
         }
 
-        // back substitution
-        double[] X = new double[N];
-        for (int i = N - 1; i >= 0; i--)
+        private void OnValidate()
         {
-            double sum = 0.0;
-            for (int j = i + 1; j < N; j++)
-            {
-                sum += A[i, j] * X[j];
-            }
-            X[i] = (B[i] - sum) / A[i, i];
+            if (materialController != null && cameraController != null)
+                materialController.SetMaterials(materials, cameraController.cameraTexture);
         }
-        return X;
+
+        #endregion
+
+        public void StartCanvasRecognition()
+        {
+            perspectiveProjection.ResetMatrix();
+            enableCanvasRecognition = true;
+
+            Debug.Log("Canvas Recognition Active!");
+        }
+
+        public void StopCanvasRecognition()
+        {
+            perspectiveProjection.ResetMatrix();
+            enableCanvasRecognition = false;
+
+            Debug.Log("Canvas Recognition stopped!");
+        }
+
+        public void StartCamera()
+        {
+            if(materialController != null)
+                cameraController.StartCamera(deviceName, videoWidth, videoHeight, videoFPS);
+
+            if (materialController != null && cameraController != null)
+                materialController.SetMaterials(materials, cameraController.cameraTexture);
+            
+            Debug.Log("Camera Started!");
+        }
+
+        public void StopCamera()
+        {
+            if (materialController != null)
+                cameraController.StopCamera();
+
+            Debug.Log("Camera Stopped!");
+        }
+
+        public void WarpPerspective()
+        {
+            StartCanvasRecognition();
+            materialController.SetVectors(materials, perspectiveProjection.GetMatrix(canvasRecognitionDLL.points, videoWidth, videoHeight));
+
+            Debug.Log("Perspective Warped!");
+        }
+
+        public void SaveTexture()
+        {
+            Debug.Log("Texture Saved!");
+        }
+
+        public void ResetTransform()
+        {
+            materialController.SetVectors(materials, new double[] { 1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f });
+
+            canvasRecognitionDLL.ResetPoints(videoWidth, videoHeight);
+
+            perspectiveProjection.ResetMatrix();
+
+            Debug.Log("Transform Reset!");
+        }
     }
-
-    #endregion
-
-    #region Import C++ CanvasRecognition plugin
-    [DllImport("CanvasRecognition")]
-    private static extern void CanvasRecognition(ref Color32[] raw, int width, int height, int blurKSize, int threshValue, int threshMax, double epsilonFactor, float areaFactor, int step, ref float[] pts);
-    #endregion
 }

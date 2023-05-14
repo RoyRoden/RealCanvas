@@ -4,14 +4,14 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 
-[CustomEditor(typeof(RealCanvas))]
+[CustomEditor(typeof(RealCanvas.RealCanvas))]
 public class RealCanvas_Inspector : Editor
 {
     public VisualTreeAsset rcInspectorXML;
 
     private List<string> deviceNames = new List<string>();
 
-    private RealCanvas script;
+    private RealCanvas.RealCanvas script;
 
     VisualElement rcInspector;
 
@@ -22,7 +22,7 @@ public class RealCanvas_Inspector : Editor
     {
         rcInspector = new VisualElement();
         rcInspectorXML.CloneTree(rcInspector);
-        script = (RealCanvas)target;
+        script = (RealCanvas.RealCanvas)target;
 
         // add materials
         VisualElement materialsContainer = rcInspector.Q("Materials_Container");
