@@ -14,17 +14,39 @@ namespace RealCanvas
 
     public class MaterialController : MonoBehaviour
     {
-        // Set material properties
-        public void SetMaterials(List<Material> materials, Texture2D cameraTexture)
+        [SerializeField]
+        List<Material> materials = new List<Material>();
+
+        private Texture2D processedTexture;
+
+        public void InitializeMaterial(string resolution)
         {
+            var width = int.Parse(resolution.Split("x")[0]);
+            var height = int.Parse(resolution.Split("x")[1]);
+
+            processedTexture = new Texture2D(width, height);
+
             OperateOnMaterials(materials, (material) =>
             {
-                material.SetTexture(ShaderProperties.VideoTexPropertyName, cameraTexture);
+                material.SetTexture(ShaderProperties.VideoTexPropertyName, processedTexture);
             });
+
+            Debug.Log("Material has been initialized with " + width + "x" + height + " resolution.");
+        }
+
+        public Texture2D ProcessedTexture {
+            get 
+            {
+                return processedTexture;
+            }
+            set
+            {
+                processedTexture = value;
+            }
         }
 
         // Set transformation matrix in the shader assigned to each material
-        public void SetVectors(List<Material> materials, double[] M)
+        public void SetVectors(double[] M)
         {
             OperateOnMaterials(materials, (material) =>
             {
@@ -32,6 +54,8 @@ namespace RealCanvas
                 material.SetVector(ShaderProperties.M1PropertyName, new Vector3((float)M[3], (float)M[4], (float)M[5]));
                 material.SetVector(ShaderProperties.M2PropertyName, new Vector3((float)M[6], (float)M[7], 1f));
             });
+
+            Debug.Log("Perspective Warped.");
         }
 
         private void OperateOnMaterials(List<Material> materials, Action<Material> operation)
@@ -50,33 +74,6 @@ namespace RealCanvas
             {
                 Debug.LogError("No materials assigned!");
             }
-        }
-
-        public void SaveTexture()
-        {
-            /*if (webcamTexture != null)
-            {
-                byte[] bytes = ImageConversion.EncodeArrayToPNG(cameraTexture.GetRawTextureData(), cameraTexture.graphicsFormat, (uint)webcamTexture.width, (uint)webcamTexture.height);
-
-                String now = System.DateTime.Now.ToString();
-                now = now.Replace("/", "");
-                now = now.Replace(":", "");
-                now = now.Replace(" ", "");
-
-                // Write the returned byte array to a file in the project folder
-                string filePath = Path.Combine(Application.dataPath, "RealCanvas/Screenshots", $"screenshot_{now}.png");
-
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    fileStream.Write(bytes, 0, bytes.Length);
-                }
-
-                Debug.Log("Texture saved!");
-            }
-            else
-            {
-                throw new Exception("Camera is not playing!");
-            }*/
         }
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Formats.Alembic.Importer;
 
 namespace RealCanvas
 {
@@ -10,7 +9,7 @@ namespace RealCanvas
         private List<Vector2> srcPts = new List<Vector2>();
         private List<Vector2> dstPts = new List<Vector2>();
 
-        public void ResetMatrix()
+        public void InitializeMatrix()
         {
             // Create a list of 4 vectors to hold the normalized coordinates of the screen's corners
             srcPts.Add(new Vector2(0f, 0f));
@@ -37,7 +36,7 @@ namespace RealCanvas
         }
 
         // Perspective Transform
-        public double[] GenerateMatrix(List<Vector2> src, List<Vector2> dst)
+        private double[] GenerateMatrix(List<Vector2> src, List<Vector2> dst)
         {
             double[,] A = new double[8, 8];
             double[] B = new double[8];
@@ -94,7 +93,7 @@ namespace RealCanvas
                 // singular or nearly singular
                 if (Math.Abs(A[p, p]) <= double.Epsilon)
                 {
-                    throw new Exception("Matrix is singular or nearly singular");
+                    throw new Exception("Matrix is singular or nearly singular!");
                 }
 
                 // pivot within A and B

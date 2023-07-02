@@ -7,7 +7,7 @@ namespace RealCanvas
     {
         public float[] points;
 
-        public void ResetPoints(int videoWidth, int videoHeight)
+        public void InitializePoints(int videoWidth, int videoHeight)
         {
             // Set points to video frame width and height.
             // This array holds the values that will be overridden by the OpenCV plugin
