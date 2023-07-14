@@ -331,9 +331,9 @@ Material:
     - _EmissiveColorLDR: {r: 0, g: 0, b: 0, a: 1}
     - _InvPrimScale: {r: 1, g: 1, b: 0, a: 0}
     - _IridescenceThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
-    - _M0: {r: 0.25136247, g: -0.00018095452, b: 0.41477272, a: 0}
-    - _M1: {r: -0.05497123, g: 0.58095145, b: 0.22222222, a: 0}
-    - _M2: {r: -0.0911644, g: -0.0072360206, b: 1, a: 0}
+    - _M0: {r: 1, g: 0, b: 0, a: 0}
+    - _M1: {r: 0, g: 1, b: 0, a: 0}
+    - _M2: {r: 0, g: 0, b: 1, a: 0}
     - _Metallic_Tiling: {r: 1, g: 1, b: 0, a: 0}
     - _Normal_Tiling: {r: 1, g: 1, b: 0, a: 0}
     - _Smoothness_Tiling: {r: 1, g: 1, b: 0, a: 0}

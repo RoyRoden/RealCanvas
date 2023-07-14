@@ -1,8 +1,8 @@
 .runtimeui-button {
-    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.94);
     -unity-font-style: normal;
     height: 50px;
-    color: rgba(242, 242, 242, 255);
+    color: rgb(242, 242, 242);
     font-size: 14px;
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
@@ -16,18 +16,18 @@
     white-space: normal;
     align-items: stretch;
     justify-content: flex-start;
-    border-left-color: rgba(156, 156, 156, 255);
-    border-right-color: rgba(156, 156, 156, 255);
-    border-top-color: rgba(156, 156, 156, 255);
-    border-bottom-color: rgba(156, 156, 156, 255);
+    border-left-color: rgb(156, 156, 156);
+    border-right-color: rgb(156, 156, 156);
+    border-top-color: rgb(156, 156, 156);
+    border-bottom-color: rgb(156, 156, 156);
     margin-left: 4px;
     margin-right: 4px;
     margin-top: 4px;
     margin-bottom: 4px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
 }
 
 .runtimeui-settings {
@@ -58,7 +58,7 @@
     height: auto;
     font-size: 14px;
     -unity-font: resource('FlatSkin/Font/Roboto-Regular');
-    color: rgba(0, 0, 0, 255);
-    text-shadow: 0 0 0 rgba(0, 0, 0, 255);
-    background-color: rgba(255, 255, 255, 0.5);
+    color: rgb(242, 242, 242);
+    text-shadow: 0 0 0 rgb(0, 0, 0);
+    background-color: rgba(184, 177, 207, 0.16);
 }

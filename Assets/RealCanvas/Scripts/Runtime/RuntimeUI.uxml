@@ -1,10 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/RealCanvas/Scripts/Styles/runtime.uss?fileID=7433441132597879392&amp;guid=484a8576571e7ba49834b23fc9b1a43c&amp;type=3#runtime" />
-    <ui:VisualElement name="MainContainer" style="width: 500px; flex-direction: column; align-items: stretch; right: 0; left: auto; background-color: rgba(0, 0, 0, 0.25); transform-origin: center; justify-content: flex-start; position: absolute; min-height: auto; flex-shrink: 1; flex-wrap: nowrap; height: auto; border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; margin-left: 5px; margin-right: 5px; margin-top: 5px; margin-bottom: 5px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0;">
+    <ui:VisualElement name="MainContainer" style="width: 500px; flex-direction: column; align-items: stretch; right: 0; left: auto; background-color: rgba(36, 34, 53, 0.94); transform-origin: center; justify-content: flex-start; position: absolute; min-height: auto; flex-shrink: 1; flex-wrap: nowrap; height: auto; border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; margin-left: 5px; margin-right: 5px; margin-top: 5px; margin-bottom: 5px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0;">
         <ui:Label tabindex="-1" text="Press &quot;H&quot; to toggle the UI" display-tooltip-when-elided="true" style="align-items: stretch; -unity-text-align: upper-center; color: rgb(242, 242, 242); -unity-font-style: bold; font-size: 16px; -unity-text-outline-width: 0; -unity-text-outline-color: rgba(0, 0, 0, 0); text-shadow: 0 0 0 rgba(0, 0, 0, 0);" />
         <ui:Foldout text="Video Feed Settings" name="Video_Feed" value="true" class="runtimeui-settings">
-            <ui:DropdownField label="Webcam" index="0" name="webcam" />
-            <ui:DropdownField label="Resolution" index="2" choices="360x640,1280x720,1920x1080,3840x2160" name="resolution" />
+            <ui:DropdownField label="Webcam" index="0" name="webcam" focusable="true" />
+            <ui:DropdownField label="Resolution" index="0" choices="360x640,1280x720,1920x1080,3840x2160" name="resolution" />
             <ui:DropdownField label="FPS" index="0" choices="30, 60" name="fps" />
         </ui:Foldout>
         <ui:Foldout text="Computer Vision Settings" name="Computer_Vision" value="true" class="runtimeui-settings">
@@ -19,7 +19,8 @@
             <ui:Button text="Start&#10;Camera" display-tooltip-when-elided="true" tooltip="Start Camera" name="start" binding-path="start" class="runtimeui-button" />
             <ui:Button text="Canvas&#10;Detection" display-tooltip-when-elided="true" binding-path="detection" name="detection" tooltip="Start Canvas Detection" class="runtimeui-button" />
             <ui:Button label="Lock Warp" text="Warp &#10;Perspective" display-tooltip-when-elided="true" binding-path="warp" name="warp" enable-rich-text="true" tooltip="Warp Perspective" class="runtimeui-button" />
-            <ui:Button label="Lock Warp" text="Save &#10;Texture" display-tooltip-when-elided="true" binding-path="save" name="save" enable-rich-text="true" tooltip="Save Texture" class="runtimeui-button" />
+            <ui:Button label="Lock Warp" text="Save &#10;Texture" display-tooltip-when-elided="true" binding-path="save" name="save" enable-rich-text="true" tooltip="Save Texture" class="runtimeui-button" style="-unity-text-align: lower-center;" />
+            <ui:Button label="Lock Warp" text="Generate Variation" display-tooltip-when-elided="true" binding-path="variation" name="variation" enable-rich-text="true" tooltip="Generate Variation" class="runtimeui-button" />
             <ui:Button text="Reset" display-tooltip-when-elided="true" binding-path="reset" name="reset" tooltip="Reset Transform" class="runtimeui-button" />
         </ui:VisualElement>
     </ui:VisualElement>

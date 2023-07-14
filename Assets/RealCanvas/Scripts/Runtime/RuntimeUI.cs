@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 namespace RealCanvas
 {
@@ -18,6 +19,7 @@ namespace RealCanvas
         private Button canvasDetection;
         private Button warpPerspective;
         private Button saveTexture;
+        private Button generateVariation;
 
         private bool isStartBtnOn = false;
         private bool isDetectionBtnOn = false;
@@ -48,6 +50,9 @@ namespace RealCanvas
 
             saveTexture = root.Q<Button>("save");
             saveTexture.clicked += SaveTexture_onClick;
+
+            generateVariation = root.Q<Button>("variation");
+            generateVariation.clicked += GenerateVariation_onClick;
         }
 
         public string Webcam => webcamDropdown.value;
@@ -70,7 +75,7 @@ namespace RealCanvas
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.H))
+            if (Keyboard.current.hKey.wasPressedThisFrame)
             {
                 ToggleVisibility();
             }
@@ -124,6 +129,11 @@ namespace RealCanvas
         private void ResetTransform_onClick()
         {
             mainController.ResetTransform();
+        }
+
+        private void GenerateVariation_onClick()
+        {
+            mainController.GenerateVariation();
         }
 
         private void UpdateButtonState(Button button, bool isOn, string onText, string offText, System.Action onAction, System.Action offAction)

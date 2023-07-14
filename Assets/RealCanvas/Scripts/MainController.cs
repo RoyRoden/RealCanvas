@@ -11,6 +11,8 @@ namespace RealCanvas
         private MaterialController materialController;
         private PerspectiveProjection perspectiveProjection;
         private CanvasRecognitionDLL canvasRecognitionDLL;
+        private CaptureController captureController;
+        private OpenAIController openAIController;
 
         #endregion
 
@@ -41,6 +43,14 @@ namespace RealCanvas
             canvasRecognitionDLL = GetComponent<CanvasRecognitionDLL>();
             if (canvasRecognitionDLL == null)
                 canvasRecognitionDLL = gameObject.AddComponent<CanvasRecognitionDLL>();
+
+            captureController = GetComponent<CaptureController>();
+            if(captureController == null)
+                captureController = gameObject.AddComponent<CaptureController>();
+
+            openAIController = GetComponent<OpenAIController>();
+            if (openAIController == null)
+                openAIController = gameObject.AddComponent<OpenAIController>();
         }
 
         void Start()
@@ -117,7 +127,12 @@ namespace RealCanvas
 
         public void SaveTexture()
         {
-            Debug.Log("Texture Saved.");
+            captureController.CaptureAndSaveImage();
+        }
+
+        public void GenerateVariation()
+        {
+            openAIController.SendPostRequest();
         }
 
         public void ResetTransform()
